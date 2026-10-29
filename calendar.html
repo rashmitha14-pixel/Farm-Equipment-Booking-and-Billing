@@ -1,0 +1,205 @@
+
+{% extends 'base.html' %}
+
+{% block content %}
+<section class="card">
+    <h1>🗓️ Equipment Booking Calendar</h1>
+
+    <p class="muted">
+        Select equipment to view its existing bookings.
+    </p>
+
+    <label for="machine">Select equipment</label>
+
+    <select id="machine">
+        {% for m in machines %}
+        <option value="{{ m.id }}">{{ m.name }}</option>
+        {% endfor %}
+    </select>
+
+    <div style="margin: 20px 0;">
+        <button type="button" id="previous">← Previous</button>
+        <button type="button" id="today">Today</button>
+        <button type="button" id="next">Next →</button>
+    </div>
+
+    <h3 id="month-title"></h3>
+
+    <div id="calendar"
+         style="display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:5px;">
+    </div>
+
+    <p style="margin-top:16px;">
+        <span style="color:#dc3545;">■</span> Fully booked
+        &nbsp;
+        <span style="color:#f0ad4e;">■</span> Partially booked
+        &nbsp;
+        <span style="color:#198754;">■</span> No bookings shown
+    </p>
+
+    <p id="message" role="status" class="muted"></p>
+
+    <a href="{{ url_for('farmer') }}">← Back to dashboard</a>
+</section>
+
+<style>
+.calendar-day {
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    padding: 8px 3px;
+    min-height: 65px;
+    text-align: center;
+    overflow-wrap: anywhere;
+}
+.calendar-day strong {
+    display: block;
+    margin-bottom: 5px;
+}
+.calendar-day.booked {
+    background: #f8d7da;
+    border-color: #dc3545;
+}
+.calendar-day.partial {
+    background: #fff3cd;
+    border-color: #f0ad4e;
+}
+.calendar-day.empty {
+    background: #d1e7dd;
+    border-color: #198754;
+}
+.calendar-heading {
+    font-weight: bold;
+    padding: 8px 2px;
+    text-align: center;
+}
+@media (max-width: 600px) {
+    .calendar-day {
+        font-size: 12px;
+        min-height: 55px;
+    }
+}
+</style>
+
+<script>
+const machineSelect = document.getElementById('machine');
+const calendar = document.getElementById('calendar');
+const title = document.getElementById('month-title');
+const message = document.getElementById('message');
+
+let shownMonth = new Date();
+shownMonth.setDate(1);
+
+async function renderCalendar() {
+    calendar.replaceChildren();
+    message.textContent = 'Loading bookings...';
+
+    title.textContent = shownMonth.toLocaleDateString(
+        'en-IN', {month: 'long', year: 'numeric'}
+    );
+
+    const weekdays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+    weekdays.forEach(day => {
+        const heading = document.createElement('div');
+        heading.className = 'calendar-heading';
+        heading.textContent = day;
+        calendar.appendChild(heading);
+    });
+
+    const year = shownMonth.getFullYear();
+    const month = shownMonth.getMonth();
+    const firstDay = new Date(year, month, 1).getDay();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+    let bookings = [];
+
+    try {
+        if (machineSelect.value) {
+            const response = await fetch(
+                '/calendar-events/' + encodeURIComponent(machineSelect.value)
+            );
+
+            if (!response.ok) {
+                throw new Error('Unable to load bookings.');
+            }
+
+            bookings = await response.json();
+        }
+    } catch (error) {
+        message.textContent = error.message;
+        return;
+    }
+
+    for (let i = 0; i < firstDay; i++) {
+        calendar.appendChild(document.createElement('div'));
+    }
+
+    for (let day = 1; day <= daysInMonth; day++) {
+        const cell = document.createElement('div');
+        cell.className = 'calendar-day';
+
+        const dateLabel =
+            `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+
+        const heading = document.createElement('strong');
+        heading.textContent = day;
+        cell.appendChild(heading);
+
+        const dayBookings = bookings.filter(booking => {
+            const start = new Date(booking.start);
+            const end = new Date(booking.end);
+            const dayStart = new Date(year, month, day);
+            const dayEnd = new Date(year, month, day + 1);
+
+            return start < dayEnd && end > dayStart;
+        });
+
+        if (dayBookings.length) {
+            const fullyBooked = dayBookings.some(
+                booking => booking.color === '#dc3545'
+            );
+
+            cell.classList.add(fullyBooked ? 'booked' : 'partial');
+
+            const note = document.createElement('small');
+            note.textContent = `${dayBookings.length} booking(s)`;
+            cell.appendChild(note);
+
+            cell.title = dayBookings.map(
+                booking => booking.title
+            ).join(', ');
+        } else {
+            cell.classList.add('empty');
+            const note = document.createElement('small');
+            note.textContent = 'No bookings';
+            cell.appendChild(note);
+        }
+
+        calendar.appendChild(cell);
+    }
+
+    message.textContent =
+        'Calendar loaded. Select a day to inspect its booking indicator.';
+}
+
+document.getElementById('previous').addEventListener('click', () => {
+    shownMonth.setMonth(shownMonth.getMonth() - 1);
+    renderCalendar();
+});
+
+document.getElementById('next').addEventListener('click', () => {
+    shownMonth.setMonth(shownMonth.getMonth() + 1);
+    renderCalendar();
+});
+
+document.getElementById('today').addEventListener('click', () => {
+    shownMonth = new Date();
+    shownMonth.setDate(1);
+    renderCalendar();
+});
+
+machineSelect.addEventListener('change', renderCalendar);
+
+renderCalendar();
+</script>
+{% endblock %}

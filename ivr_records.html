@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1">
+
+    <title>AgriSetu IVR Records</title>
+
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='style.css') }}">
+
+    <style>
+        body {
+            padding: 25px;
+            font-family: Arial, sans-serif;
+            background: #f4f7f4;
+        }
+
+        h1 {
+            color: #246b43;
+        }
+
+        .actions {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .actions a {
+            background: #246b43;
+            color: white;
+            padding: 10px 16px;
+            border-radius: 7px;
+            text-decoration: none;
+        }
+
+        .table-wrap {
+            overflow-x: auto;
+            background: white;
+            border-radius: 10px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            padding: 12px;
+            border-bottom: 1px solid #ddd;
+            text-align: left;
+            vertical-align: top;
+        }
+
+        th {
+            background: #246b43;
+            color: white;
+        }
+
+        pre {
+            white-space: pre-wrap;
+            font-family: inherit;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h1>📞 AgriSetu IVR Call Records</h1>
+
+    <div class="actions">
+
+        <a href="{{ url_for('manager') }}">
+            ← Owner Dashboard
+        </a>
+
+        <a href="{{ url_for('manager_ivr_export') }}">
+            Download CSV Report
+        </a>
+
+    </div>
+
+    <div class="table-wrap">
+
+        <table>
+
+            <thead>
+                <tr>
+                    <th>Call ID</th>
+                    <th>Farmer</th>
+                    <th>Language</th>
+                    <th>Started</th>
+                    <th>Ended</th>
+                    <th>Machine</th>
+                    <th>Booking ID</th>
+                    <th>Result</th>
+                    <th>Activity</th>
+                </tr>
+            </thead>
+
+            <tbody>
+
+                {% for call in calls %}
+
+                <tr>
+
+                    <td>{{ call.id }}</td>
+
+                    <td>
+                        {{ call.code or 'Not verified' }}
+                        <br>
+                        {{ call.farmer_name or '' }}
+                    </td>
+
+                    <td>{{ call.language }}</td>
+
+                    <td>{{ call.started_at }}</td>
+
+                    <td>{{ call.ended_at or 'In progress' }}</td>
+
+                    <td>{{ call.machine_name or '-' }}</td>
+
+                    <td>{{ call.booking_id or '-' }}</td>
+
+                    <td>{{ call.result }}</td>
+
+                    <td>
+                        <pre>{{ call.selections }}</pre>
+                    </td>
+
+                </tr>
+
+                {% else %}
+
+                <tr>
+                    <td colspan="9">
+                        No IVR calls recorded yet.
+                    </td>
+                </tr>
+
+                {% endfor %}
+
+            </tbody>
+
+        </table>
+
+    </div>
+
+</body>
+</html>

@@ -1,0 +1,695 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<div class="dash-head">
+    <div>
+        <span class="eyebrow">
+            {{ t('farmer') }} · {{ farmer.code }}
+        </span>
+
+        <h1>
+            {{ t('welcome_back') }}, {{ farmer.name }} 👋
+        </h1>
+    </div>
+
+    <span class="pill green">{{ t('active') }}</span>
+</div>
+
+<div class="layout">
+
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+        <a href="#equipment">🚜 {{ t('equipment') }}</a>
+        <a href="#booking">📅 {{ t('booking') }}</a>
+        <a href="{{ url_for('calendar') }}">🗓️ Booking Calendar</a>
+        <a href="#mybookings">🧾 {{ t('my_bookings') }}</a>
+        <a href="#notifications">🔔 {{ t('notifications') }}</a>
+        <a href="#profile">👤 {{ t('profile') }}</a>
+    </aside>
+
+    <div class="maincol">
+
+        <!-- EQUIPMENT LIST -->
+        <section class="card" id="equipment">
+
+            <h2>{{ t('equipment') }}</h2>
+
+            <div class="cards machines">
+
+                {% for m in machines %}
+
+                <div class="machine-card">
+
+                    <div class="machine-icon">🚜</div>
+
+                    <h3>{{ m.name }}</h3>
+
+                    <p class="muted">
+                        {{ m.category }} · {{ m.location }}
+                    </p>
+
+                    <strong>
+                        ₹{{ '%.2f'|format(m.rate) }} / hr
+                    </strong>
+
+                    <div class="space-top">
+
+                        <span class="pill {% if m.status == 'Available' %}green{% else %}amber{% endif %}">
+                            {{ t('available') if m.status == 'Available' else t('under_service') }}
+                        </span>
+
+                    </div>
+
+                </div>
+
+                {% else %}
+
+                <p class="muted">{{ t('no_records') }}</p>
+
+                {% endfor %}
+
+            </div>
+
+        </section>
+
+
+        <!-- BOOK EQUIPMENT -->
+        <section class="card" id="booking">
+
+            <h2>{{ t('booking') }}</h2>
+
+            <form
+                method="POST"
+                action="{{ url_for('book') }}"
+                id="book-form"
+            >
+
+                <div class="form-grid">
+
+                    <!-- MACHINE -->
+                    <label>
+                        {{ t('machine') }}
+
+                        <select
+                            id="machine"
+                            name="machine_id"
+                            required
+                        >
+
+                            <option value="">
+                                {{ 'ಉಪಕರಣ ಆಯ್ಕೆಮಾಡಿ' if lang == 'kn' else 'Select Equipment' }}
+                            </option>
+
+                            {% for m in machines %}
+
+                            <option
+                                value="{{ m.id }}"
+                                {% if m.status != 'Available' %}disabled{% endif %}
+                            >
+                                {{ m.name }} — ₹{{ m.rate }}/hr
+
+                                {% if m.status != 'Available' %}
+                                    ({{ t('under_service') }})
+                                {% endif %}
+                            </option>
+
+                            {% endfor %}
+
+                        </select>
+                    </label>
+
+
+                    <!-- START TIME -->
+                    <label>
+
+                        {{ 'ಪ್ರಾರಂಭ ದಿನಾಂಕ ಮತ್ತು ಸಮಯ' if lang == 'kn'
+                           else 'Start Date and Time' }}
+
+                        <input
+                            id="start"
+                            type="datetime-local"
+                            name="start_time"
+                            min="{{ today }}T00:00"
+                            required
+                        >
+
+                    </label>
+
+
+                    <!-- END TIME -->
+                    <label>
+
+                        {{ 'ಮುಕ್ತಾಯ ದಿನಾಂಕ ಮತ್ತು ಸಮಯ' if lang == 'kn'
+                           else 'End Date and Time' }}
+
+                        <input
+                            id="end"
+                            type="datetime-local"
+                            name="end_time"
+                            min="{{ today }}T00:00"
+                            required
+                        >
+
+                    </label>
+
+
+                    <!-- QUANTITY -->
+                    <label>
+
+                        {{ 'ಬೇಕಾದ ಉಪಕರಣಗಳ ಸಂಖ್ಯೆ' if lang == 'kn'
+                           else 'Quantity Required' }}
+
+                        <input
+                            id="quantity"
+                            type="number"
+                            name="quantity"
+                            min="1"
+                            value="1"
+                            required
+                        >
+
+                    </label>
+
+                </div>
+
+
+                <!-- BOOKED SLOTS -->
+                <div class="space-top">
+
+                    <h3>
+                        {{ 'ಈಗಾಗಲೇ ಬುಕ್ ಆಗಿರುವ ಸಮಯಗಳು' if lang == 'kn'
+                           else 'Already Booked Slots' }}
+                    </h3>
+
+                    <div id="slots" class="muted">
+                        {{ 'ಉಪಕರಣ ಆಯ್ಕೆಮಾಡಿ' if lang == 'kn'
+                           else 'Select equipment to view booked slots.' }}
+                    </div>
+
+                </div>
+
+
+                <!-- AVAILABILITY MESSAGE -->
+                <div
+                    id="result"
+                    class="space-top"
+                    aria-live="polite"
+                ></div>
+
+
+                <!-- BUTTONS -->
+                <div class="button-row space-top">
+
+                    <button
+                        type="button"
+                        class="btn outline"
+                        id="check"
+                    >
+                        {{ 'ಲಭ್ಯತೆ ಪರಿಶೀಲಿಸಿ' if lang == 'kn'
+                           else 'Check Availability' }}
+                    </button>
+
+                    <button
+                        type="submit"
+                        class="btn primary"
+                        id="submitBooking"
+                        style="
+                            background:#218838;
+                            color:white;
+                            padding:12px 24px;
+                            border:none;
+                            border-radius:8px;
+                            font-weight:bold;
+                            cursor:pointer;
+                        "
+                        disabled
+                    >
+                        {{ 'ಬುಕಿಂಗ್ ದೃಢೀಕರಿಸಿ' if lang == 'kn'
+                           else 'Confirm Booking' }}
+                    </button>
+
+                </div>
+
+            </form>
+
+        </section>
+
+
+        <!-- MY BOOKINGS -->
+        <section class="card" id="mybookings">
+
+            <h2>{{ t('my_bookings') }}</h2>
+
+            <div class="table-wrap">
+
+                <table>
+
+                    <thead>
+                        <tr>
+                            <th>{{ t('booking_id') }}</th>
+                            <th>{{ t('machine') }}</th>
+                            <th>{{ t('start') }}</th>
+                            <th>{{ t('end') }}</th>
+                            <th>{{ t('booked_hours') }}</th>
+                            <th>{{ t('actual_hours') }}</th>
+                            <th>{{ t('status') }}</th>
+                            <th>{{ t('bill') }}</th>
+                            <th>{{ t('paid') }}</th>
+                            <th>{{ t('pending') }}</th>
+                            <th>{{ t('actions') }}</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+
+                        {% for b in bookings %}
+
+                        <tr>
+
+                            <td>#{{ b.id }}</td>
+
+                            <td>{{ b.machine_name }}</td>
+
+                            <td>{{ b.start_time.replace('T', ' ') }}</td>
+
+                            <td>{{ b.end_time.replace('T', ' ') }}</td>
+
+                            <td>{{ b.booked_hours }}</td>
+
+                            <td>
+                                {{ b.actual_hours if b.actual_hours is not none else '—' }}
+                            </td>
+
+                            <td>
+
+                                <span class="pill {% if b.status == 'Completed' %}green{% elif b.status == 'Cancelled' %}red{% else %}amber{% endif %}">
+
+                                    {% if b.status == 'Completed' %}
+                                        {{ t('completed') }}
+
+                                    {% elif b.status == 'Cancelled' %}
+                                        {{ t('cancelled') }}
+
+                                    {% elif b.status == 'Pending' %}
+                                        {{ t('pending') }}
+
+                                    {% else %}
+                                        {{ t('confirmed') }}
+                                    {% endif %}
+
+                                </span>
+
+                            </td>
+
+                            <td>
+
+                                {% if b.bill is not none %}
+
+                                    ₹{{ '%.2f'|format(b.bill) }}
+
+                                {% else %}
+
+                                    —
+
+                                {% endif %}
+
+                            </td>
+
+                            <td>
+                                ₹{{ '%.2f'|format(b.paid or 0) }}
+                            </td>
+
+                            <td>
+
+                                {% if b.bill is not none %}
+
+                                    ₹{{ '%.2f'|format([b.bill - (b.paid or 0), 0]|max) }}
+
+                                {% else %}
+
+                                    —
+
+                                {% endif %}
+
+                            </td>
+
+                            <td>
+
+                                {% if b.status == 'Confirmed' %}
+
+                                <form
+                                    method="POST"
+                                    action="{{ url_for('cancel', bid=b.id) }}"
+                                    onsubmit="return confirm('Cancel this booking?')"
+                                >
+
+                                    <button
+                                        type="submit"
+                                        class="small-btn danger"
+                                    >
+                                        {{ t('cancel') }}
+                                    </button>
+
+                                </form>
+
+                                {% else %}
+
+                                —
+
+                                {% endif %}
+
+                            </td>
+
+                        </tr>
+
+                        {% else %}
+
+                        <tr>
+                            <td colspan="11">
+                                {{ t('no_records') }}
+                            </td>
+                        </tr>
+
+                        {% endfor %}
+
+                    </tbody>
+
+                </table>
+
+            </div>
+
+        </section>
+
+
+        <!-- NOTIFICATIONS -->
+        <section class="card" id="notifications">
+
+            <h2>{{ t('notifications') }}</h2>
+
+            {% for n in notes %}
+
+            <div class="note">
+
+                🔔 {{ n.message_kn if lang == 'kn' else n.message_en }}
+
+                <small>{{ n.created_at }}</small>
+
+            </div>
+
+            {% else %}
+
+            <p class="muted">{{ t('no_records') }}</p>
+
+            {% endfor %}
+
+        </section>
+
+
+        <!-- PROFILE -->
+        <section class="card" id="profile">
+
+            <h2>{{ t('profile') }}</h2>
+
+            <div class="details">
+
+                <p>
+                    <strong>{{ t('farmer_id') }}:</strong>
+                    {{ farmer.code }}
+                </p>
+
+                <p>
+                    <strong>{{ t('name') }}:</strong>
+                    {{ farmer.name }}
+                </p>
+
+                <p>
+                    <strong>{{ t('phone') }}:</strong>
+                    {{ farmer.phone }}
+                </p>
+
+                <p>
+                    <strong>{{ t('village') }}:</strong>
+                    {{ farmer.village }}
+                </p>
+
+            </div>
+
+        </section>
+
+    </div>
+
+</div>
+
+{% endblock %}
+
+
+{% block scripts %}
+
+<script>
+
+document.addEventListener("DOMContentLoaded", function () {
+
+    const machine = document.getElementById("machine");
+    const start = document.getElementById("start");
+    const end = document.getElementById("end");
+    const quantity = document.getElementById("quantity");
+
+    const slots = document.getElementById("slots");
+    const result = document.getElementById("result");
+
+    const checkButton = document.getElementById("check");
+    const submitButton = document.getElementById("submitBooking");
+    const bookingForm = document.getElementById("book-form");
+
+    let availabilityChecked = false;
+
+
+    // RESET WHEN BOOKING DETAILS CHANGE
+
+    function resetAvailability() {
+
+        availabilityChecked = false;
+
+        submitButton.disabled = true;
+
+        result.textContent = "";
+
+    }
+
+
+    [machine, start, end, quantity].forEach(function (element) {
+
+        element.addEventListener("input", resetAvailability);
+
+        element.addEventListener("change", resetAvailability);
+
+    });
+
+
+    // DISPLAY BOOKED SLOTS
+
+    async function loadSlots() {
+
+        slots.textContent = "Loading...";
+
+        if (!machine.value) {
+
+            slots.textContent = "Select equipment.";
+
+            return;
+
+        }
+
+        try {
+
+            const response = await fetch(
+                "/slots/" + encodeURIComponent(machine.value)
+            );
+
+            if (!response.ok) {
+                throw new Error("Unable to load slots");
+            }
+
+            const data = await response.json();
+
+            slots.replaceChildren();
+
+            if (!data.length) {
+
+                slots.textContent =
+                    "No booked slots / ಕಾಯ್ದಿರಿಸಿದ ಸಮಯಗಳಿಲ್ಲ";
+
+                return;
+
+            }
+
+            data.forEach(function (item) {
+
+                const paragraph = document.createElement("p");
+
+                paragraph.textContent =
+                    item.start_time.replace("T", " ") +
+                    " → " +
+                    item.end_time.replace("T", " ");
+
+                slots.appendChild(paragraph);
+
+            });
+
+        } catch (error) {
+
+            slots.textContent = "Unable to load booked slots.";
+
+        }
+
+    }
+
+
+    // CHECK EQUIPMENT AVAILABILITY
+
+    checkButton.addEventListener("click", async function () {
+
+        resetAvailability();
+
+        if (!bookingForm.reportValidity()) {
+            return;
+        }
+
+        const startDate = new Date(start.value);
+        const endDate = new Date(end.value);
+
+        if (endDate <= startDate) {
+
+            result.textContent =
+                "End time must be after start time.";
+
+            result.className = "error-text";
+
+            return;
+
+        }
+
+        const hours =
+            (endDate.getTime() - startDate.getTime()) / 3600000;
+
+        if (hours < 1 || hours > 10) {
+
+            result.textContent =
+                "Booking duration must be between 1 and 10 hours.";
+
+            result.className = "error-text";
+
+            return;
+
+        }
+
+        result.textContent = "Checking availability...";
+
+        checkButton.disabled = true;
+
+        try {
+
+            const response = await fetch("/availability", {
+
+                method: "POST",
+
+                headers: {
+                    "Content-Type": "application/json"
+                },
+
+                body: JSON.stringify({
+
+                    machine_id: machine.value,
+
+                    start_time: start.value,
+
+                    end_time: end.value,
+
+                    quantity: Number(quantity.value),
+
+                    hours: hours
+
+                })
+
+            });
+
+            if (!response.ok) {
+                throw new Error("Availability check failed");
+            }
+
+            const data = await response.json();
+
+            result.textContent =
+                (data.available ? "✓ " : "✕ ") + data.message;
+
+            result.className =
+                data.available ? "success-text" : "error-text";
+
+            availabilityChecked = data.available === true;
+
+            submitButton.disabled = !availabilityChecked;
+            if (availabilityChecked) {
+    submitButton.removeAttribute("disabled");
+    submitButton.style.opacity = "1";
+    submitButton.style.cursor = "pointer";
+}
+
+        } catch (error) {
+
+            result.textContent =
+                "Unable to check availability. Please try again.";
+
+            result.className = "error-text";
+
+            submitButton.disabled = true;
+
+        } finally {
+
+            checkButton.disabled = false;
+
+        }
+
+    });
+
+
+    // PREVENT SUBMISSION BEFORE AVAILABILITY CHECK
+
+    bookingForm.addEventListener("submit", function (event) {
+
+        if (!availabilityChecked) {
+
+            event.preventDefault();
+
+            result.textContent =
+                "Please check equipment availability first.";
+
+            result.className = "error-text";
+
+        }
+
+    });
+
+
+    // RELOAD SLOTS WHEN MACHINE CHANGES
+
+    machine.addEventListener("change", loadSlots);
+
+    submitButton.disabled = true;
+
+    loadSlots();
+
+});
+
+</script>
+
+<form action="{{ url_for('farmer_ivr_pin') }}"
+      method="POST">
+
+    <button type="submit">
+        Generate My First IVR PIN
+    </button>
+
+</form>
+
+{% endblock %}

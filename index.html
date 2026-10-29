@@ -1,0 +1,206 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<!-- HERO SECTION -->
+
+<section class="hero">
+
+    <div>
+
+        <div class="eyebrow">
+            🌱 AGRICULTURE • SMART COOPERATIVE
+        </div>
+
+        <h1>{{ t('welcome') }}</h1>
+
+        <p>{{ t('intro') }}</p>
+
+        <div class="hero-actions">
+
+            <a class="btn"
+               href="{{ url_for('register') }}">
+                {{ t('create_account') }} →
+            </a>
+
+            <a class="btn outline"
+               href="{{ url_for('login', role='farmer') }}">
+                {{ t('farmer_login') }}
+            </a>
+
+            <a class="btn outline"
+               href="{{ url_for('ivr') }}">
+                📞 Farmer IVR
+            </a>
+
+        </div>
+
+    </div>
+
+    <div class="hero-art">
+
+        <div class="circle">🚜</div>
+
+        <div class="art-caption">
+            AGRISETU
+            <br>
+            <small>BOOK • USE • PAY</small>
+        </div>
+
+    </div>
+
+</section>
+
+
+<!-- GET STARTED -->
+
+<h2 class="section-title">
+    {{ t('get_started') }}
+</h2>
+
+<div class="cards three">
+
+    <!-- FARMER LOGIN -->
+
+    <a class="card role-card"
+       href="{{ url_for('login', role='farmer') }}">
+
+        <span class="emoji">👨‍🌾</span>
+
+        <h3>{{ t('farmer_login') }}</h3>
+
+        <span class="link-arrow">→</span>
+
+    </a>
+
+
+    <!-- OWNER LOGIN -->
+
+    <a class="card role-card"
+       href="{{ url_for('login', role='manager') }}">
+
+        <span class="emoji">🚜</span>
+
+        <h3>{{ t('manager_login') }}</h3>
+
+        <span class="link-arrow">→</span>
+
+    </a>
+
+
+    <!-- OFFICER LOGIN -->
+
+    <a class="card role-card"
+       href="{{ url_for('login', role='officer') }}">
+
+        <span class="emoji">🛡️</span>
+
+        <h3>{{ t('officer_login') }}</h3>
+
+        <span class="link-arrow">→</span>
+
+    </a>
+
+</div>
+
+
+<!-- FARMER IVR SECTION -->
+
+<section class="card spaced"
+         style="
+         text-align:center;
+         background:linear-gradient(135deg,#e8f5e9,#ffffff);
+         border:1px solid #c8e6c9;
+         ">
+
+    <div style="font-size:42px;">
+        📞
+    </div>
+
+    <h2 style="color:#176b39;">
+        AgriSetu Farmer IVR
+    </h2>
+
+    <p style="
+       color:#555;
+       max-width:550px;
+       margin:12px auto;
+       line-height:1.7;
+       ">
+
+        Experience our automated farmer assistance system.
+        Choose Kannada or English and use the virtual phone
+        keypad to explore equipment booking, availability,
+        booking status and rental rates.
+
+    </p>
+
+    <p style="font-size:14px;color:#777;">
+        ಕನ್ನಡ ಮತ್ತು ಇಂಗ್ಲಿಷ್ ಭಾಷೆಯಲ್ಲಿ ರೈತರಿಗೆ ಸಹಾಯ
+    </p>
+
+    <a href="{{ url_for('ivr') }}"
+       class="btn"
+       style="
+       display:inline-block;
+       background:#176b39;
+       color:white;
+       padding:15px 30px;
+       margin-top:15px;
+       border-radius:12px;
+       text-decoration:none;
+       font-weight:bold;
+       ">
+
+        📞 Call AgriSetu
+
+    </a>
+
+    <p style="
+       font-size:12px;
+       color:#888;
+       margin-top:15px;
+       ">
+        Free simulated IVR • No actual phone call required
+    </p>
+
+</section>
+
+
+<!-- HOW IT WORKS -->
+
+<section class="card spaced">
+
+    <h2>{{ t('how_it_works') }}</h2>
+
+    <div class="steps">
+
+        <div>
+            01
+            <br>
+            <strong>{{ t('step1') }}</strong>
+        </div>
+
+        <div>
+            02
+            <br>
+            <strong>{{ t('step2') }}</strong>
+        </div>
+
+        <div>
+            03
+            <br>
+            <strong>{{ t('step3') }}</strong>
+        </div>
+
+        <div>
+            04
+            <br>
+            <strong>{{ t('step4') }}</strong>
+        </div>
+
+    </div>
+
+</section>
+
+{% endblock %}
